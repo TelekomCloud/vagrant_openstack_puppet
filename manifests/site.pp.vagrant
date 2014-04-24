@@ -1,0 +1,328 @@
+# Copyright (C) 2014
+# Author: Tri Hoang Vo <vohoangtri at gmail.com>
+#
+# Licensed under the Apache License, Version 2.0 (the "License"); you may
+# not use this file except in compliance with the License. You may obtain
+# a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+# WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+# License for the specific language governing permissions and limitations
+# under the License.
+#
+# Configure the deployment of openStack on multi nodes:
+# ml2 plugin with ovs + l2 population over GRE data network
+# iSCSI on control node
+#
+# == Dependencies
+#
+# used by project vagrant_openstack available at
+# https://github.com/trihoangvo/vagrant_openstack
+#
+
+node default {
+  import 'params.pp'
+  $control_ip = dnslookup("control.local")
+  notify { "found control ip $control_ip": }
+}
+
+node 'control' inherits default {
+
+  class {'openstack::controller':
+    # Required Network
+    public_address               => $control_ip,
+    admin_email                  => $admin_email,
+    # required password
+    admin_password               => $admin_password,
+    rabbit_password              => $rabbit_password,
+    keystone_db_password         => $keystone_db_password,
+    keystone_admin_token         => $keystone_admin_token,
+    glance_db_password           => $glance_db_password,
+    glance_user_password         => $glance_user_password,
+    nova_db_password             => $nova_db_password,
+    nova_user_password           => $nova_user_password,
+    nova_memcached_servers       => false,
+    secret_key                   => $secret_key,
+    mysql_root_password          => $mysql_root_password,
+    # cinder and neutron password are not required b/c they are
+    # optional. Not sure what to do about this.
+    neutron_user_password        => $neutron_user_password,
+    neutron_db_password          => $neutron_db_password,
+    neutron_core_plugin          => 'ml2',
+    cinder_user_password         => $cinder_user_password,
+    cinder_db_password           => $cinder_db_password,
+    swift_user_password          => false,
+    # Database
+    db_host                      => $control_ip,
+    db_type                      => 'mysql',
+    mysql_account_security       => true,
+    mysql_bind_address           => $control_ip,
+    sql_idle_timeout             => undef,
+    allowed_hosts                => '%',
+    mysql_ssl                    => false,
+    mysql_ca                     => undef,
+    mysql_cert                   => undef,
+    mysql_key                    => undef,
+    # Keystone
+    keystone_host                => $control_ip,
+    keystone_db_user             => $keystone_db_user,
+    keystone_db_dbname           => $keystone_db_dbname,
+    keystone_admin_tenant        => $keystone_admin_tenant,
+    keystone_bind_address        => $control_ip,
+    region                       => 'RegionOne',
+    public_protocol              => 'http',
+    keystone_token_driver        => 'keystone.token.backends.sql.Token',
+    token_format                 => 'PKI',
+    # Glance
+    glance_registry_host         => $control_ip,
+    glance_db_user               => $glance_db_user,
+    glance_db_dbname             => $glance_db_dbname,
+    glance_api_servers           => "${control_ip}:9292",
+    glance_backend               => 'file',
+    glance_rbd_store_user        => undef,
+    glance_rbd_store_pool        => undef,
+    # Glance Swift Backend
+    swift_store_user             => 'swift_store_user',
+    swift_store_key              => 'swift_store_key',
+    # Nova
+    nova_admin_tenant_name       => $nova_admin_tenant_name,
+    nova_admin_user              => $nova_admin_user,
+    nova_db_user                 => $nova_db_user,
+    nova_db_dbname               => $nova_db_name,
+    purge_nova_config            => false,
+    enabled_apis                 => 'osapi_compute,metadata',
+    nova_bind_address            => $control_ip,
+    # Rabbit
+    rabbit_host                  => $control_ip,
+    rabbit_hosts                 => false,
+    rabbit_cluster_nodes         => false,
+    rabbit_user                  => $rabbit_user,
+    rabbit_virtual_host          => '/',
+    # Horizon
+    horizon                      => true,
+    cache_server_ip              => $control_ip,
+    cache_server_port            => '11211',
+    horizon_app_links            => undef,
+    # VNC
+    vnc_enabled                  => false,
+    vncproxy_host                => false,
+    # General
+    debug                        => false,
+    verbose                      => true,
+    # cinder
+    # if the cinder management components should be installed
+    cinder                       => true,
+    cinder_db_user               => $cinder_db_user,
+    cinder_db_dbname             => $cinder_db_name,
+    cinder_bind_address          => $control_ip,
+    manage_volumes               => true,
+    volume_group                 => 'cinder-volumes',
+    setup_test_volume            => false,
+    iscsi_ip_address             => $control_ip,
+    # Neutron
+    neutron                      => true,
+    physical_network             => 'default',
+    tenant_network_type          => 'gre',
+    ovs_enable_tunneling         => true,
+    allow_overlapping_ips        => true,
+    ovs_local_ip                 => false,
+    network_vlan_ranges          => undef,
+    bridge_interface             => 'eth3',
+    external_bridge_name         => 'br-ex',
+    bridge_uplinks               => undef,
+    bridge_mappings              => undef,
+    enable_ovs_agent             => false,
+    enable_ovsml2_agent          => false,
+    enable_dhcp_agent            => false,
+    enable_l3_agent              => false,
+    enable_metadata_agent        => false,
+    metadata_shared_secret       => $neutron_meta_secret,
+    firewall_driver              => 'neutron.agent.linux.iptables_firewall.OVSHybridIptablesFirewallDriver',
+    neutron_db_user              => $neutron_db_user,
+    neutron_db_name              => $neutron_db_name,
+    neutron_auth_url             => 'http://${mgmt_ip}:35357/v2.0',
+    enable_neutron_server        => true,
+    security_group_api           => 'neutron',
+    # swift
+    swift                        => false,
+    swift_public_address         => false,
+    swift_internal_address       => false,
+    swift_admin_address          => false,
+    # Syslog
+    use_syslog                   => true,
+    log_facility                 => 'LOG_USER',
+    enabled                      => true,
+  }
+
+  # add glance image for vagrant environment from cache or download from internet
+  $local_image = '/vagrant/cache/cirros-0.3.2-x86_64-disk.img'
+  $local_image_exists = inline_template("<%= File.exists?('${local_image}') %>")
+  notify { "local_image_exists ${local_image_exists}": }
+  if $local_image_exists == 'true' {
+    glance_image { 'cloudimg':
+      ensure           => present,
+      name             => "cirros-0.3.2-x86_64-disk",
+      is_public        => "yes",
+      container_format => "ovf",
+      disk_format      => 'qcow2',
+      source           => $local_image,
+      require          => Class['glance::api'],
+    }
+  }
+  else {
+    glance_image { 'cloudimg':
+      ensure           => present,
+      name             => "cirros-0.3.2-x86_64-disk",
+      is_public        => "yes",
+      container_format => "ovf",
+      disk_format      => 'qcow2',
+      source           => 'http://download.cirros-cloud.net/0.3.2/cirros-0.3.2-x86_64-disk.img',
+      require          => Class['glance::api'],
+    }
+  }
+  
+  class { 'openstack::auth_file':
+      admin_password       => $admin_password,
+      controller_node      => $control_ip,
+      keystone_admin_token => $keystone_admin_token,
+      admin_tenant         => $keystone_admin_tenant,
+  }
+}
+
+node /compute/ inherits default {
+  
+  $data_ip = inline_template("<%= scope.lookupvar('ipaddress_eth2') %>")
+
+  class { 'openstack::compute':
+    # Required Network
+    internal_address             => $data_ip,
+    # Required Rabbit
+    rabbit_password              => $rabbit_password,
+    # DB
+    nova_db_password             => $nova_db_password,
+    db_host                      => $control_ip,
+    # Nova Database
+    nova_db_user                 => $nova_db_user,
+    nova_db_name                 => $nova_db_name,
+    # Neutron
+    neutron                      => true,
+    neutron_user_password        => $neutron_user_password,
+    neutron_admin_tenant_name    => $neutron_admin_tenant_name,
+    neutron_admin_user           => $neutron_admin_user,
+    enable_ovs_agent             => false,
+    enable_ovsml2_agent          => true,
+    enable_l3_agent              => false,
+    enable_dhcp_agent            => false,
+    neutron_auth_url             => "http://${control_ip}:35357/v2.0",
+    keystone_host                => $control_ip,
+    neutron_host                 => $control_ip,
+    ovs_enable_tunneling         => true,
+    ovs_local_ip                 => $data_ip,
+    neutron_firewall_driver      => 'neutron.agent.linux.iptables_firewall.OVSHybridIptablesFirewallDriver',
+    bridge_mappings              => undef,
+    bridge_uplinks               => undef,
+    security_group_api           => 'neutron',
+    # Nova
+    nova_admin_tenant_name       => $nova_admin_tenant_name,
+    nova_admin_user              => $nova_admin_user,
+    purge_nova_config            => false,
+    libvirt_vif_driver           => 'nova.virt.libvirt.vif.LibvirtGenericVIFDriver',
+    # Rabbit
+    rabbit_host                  => $control_ip,
+    rabbit_hosts                 => false,
+    rabbit_user                  => $rabbit_user,
+    rabbit_virtual_host          => '/',
+    # Glance
+    glance_api_servers           => "${control_ip}:9292",
+    # Virtualization
+    libvirt_type                 => 'qemu',
+    # VNC
+    vnc_enabled                  => false,
+    vncproxy_host                => undef,
+    vncserver_listen             => '0.0.0.0',
+    # cinder / volumes
+    manage_volumes               => true,
+    cinder_volume_driver         => undef,               # no local volumes on compute
+    cinder_db_password           => $cinder_db_password,
+    cinder_db_user               => $cinder_db_user,
+    cinder_db_name               => $cinder_db_name,
+    volume_group                 => 'cinder-volumes',
+    iscsi_ip_address             => $control_ip,
+    setup_test_volume            => false,
+    cinder_rbd_user              => 'volumes',
+    cinder_rbd_pool              => 'volumes',
+    cinder_rbd_secret_uuid       => false,
+    # General
+    migration_support            => true,
+    verbose                      => true,
+    force_config_drive           => false,
+    use_syslog                   => true,
+    log_facility                 => 'LOG_USER',
+    enabled                      => true,
+  }
+}
+
+node /neutron[1-2]/ inherits default {
+
+  $data_ip = inline_template("<%= scope.lookupvar('ipaddress_eth2') %>")
+
+  class { 'openstack::neutron':
+    # Passwords
+    user_password                => $neutron_user_password,
+    rabbit_password              => $rabbit_password,
+    # enable or disable neutron
+    enabled                      => true,
+    enable_server                => false,
+    # Set DHCP/L3 Agents on Primary Controller
+    enable_dhcp_agent            => true,
+    enable_l3_agent              => true,
+    enable_metadata_agent        => true,
+    enable_ovs_agent             => false,
+    enable_ovsml2_agent          => true,
+    # OVS settings
+    tenant_network_type          => 'gre',
+    network_vlan_ranges          => undef,
+    ovs_local_ip                 => $data_ip,
+    ovs_enable_tunneling         => true,
+    allow_overlapping_ips        => true,
+    bridge_uplinks               => ['br-ex:eth3'],
+    bridge_mappings              => ['default:br-ex'],
+    # rely on the default set in ovs
+    firewall_driver              => 'neutron.agent.linux.iptables_firewall.OVSHybridIptablesFirewallDriver',
+    # networking and Interface Information
+    # Metadata configuration
+    shared_secret                => $neutron_meta_secret,
+    metadata_ip                  => $control_ip,
+    # Neutron Authentication Information
+    auth_url                     => 'http://${control_ip}:35357/v2.0',
+    # Rabbit Information
+    rabbit_user                  => $rabbit_user,
+    rabbit_host                  => $control_ip,
+    rabbit_hosts                 => false,
+    rabbit_virtual_host          => '/',
+    # Database. Currently mysql is the only option.
+    db_type                      => 'mysql',
+    db_password                  => $neutron_db_password,
+    db_host                      => $control_ip,
+    db_name                      => $neutron_db_name,
+    db_user                      => $neutron_db_user,
+    sql_idle_timeout             => '3600',
+    # Plugin
+    core_plugin                  => 'ml2',
+    # General
+    bind_address                 => $control_ip,
+    keystone_host                => $control_ip,
+    use_syslog                   => true,
+    log_facility                 => 'LOG_USER',
+    verbose                      => true,
+    debug                        => true,
+  }
+
+  sysctl::value { 'net.ipv4.ip_forward':
+    value => '1'
+  }
+
+}
