@@ -321,12 +321,13 @@ node /neutron[1-2]/ inherits default {
     debug                        => true,
   }
    
-   sysctl::value { 
-    "net.ipv4.ip_forward": value => "1";
-    "net.ipv4.conf.all.rp_filter": value => "0";
-    "net.ipv4.conf.default.rp_filter": value => "0";
-    "net.ipv6.conf.all.forwarding": value => "1";   
-   }
+	class sysctl {
+		sysctl::value { 
+	    'net.ipv4.ip_forward': value => '1';
+	    'net.ipv4.conf.all.rp_filter': value => '0';
+	    'net.ipv4.conf.default.rp_filter': value => '0';
+	    'net.ipv6.conf.all.forwarding': value => '1';
+	}
    
 #  sysctl::value { 'net.ipv4.ip_forward':
 #    value => '1'
