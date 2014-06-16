@@ -25,7 +25,7 @@ mod 'ssh', :git => 'git://github.com/saz/puppet-ssh'
 mod 'stdlib', :git => 'git://github.com/puppetlabs/puppetlabs-stdlib'
 mod 'apt', :git => 'git://github.com/puppetlabs/puppetlabs-apt'
 mod 'concat', :git => 'git://github.com/puppetlabs/puppetlabs-concat'
-mod 'sysctl', :git => 'git@github.com:example42/puppet-sysctl.git'
+mod 'sysctl', :git => 'git://github.com/example42/puppet-sysctl.git'
 mod 'inifile', :git => 'git://github.com/puppetlabs/puppetlabs-inifile'
 mod 'memcached', :git => 'git://github.com/saz/puppet-memcached'
 
