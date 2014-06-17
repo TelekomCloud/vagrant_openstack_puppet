@@ -226,6 +226,7 @@ node /compute/ inherits default {
     bridge_uplinks               => undef,
     security_group_api           => 'neutron',
     # Nova
+		nova_user_password           => $nova_user_password,
     nova_admin_tenant_name       => $nova_admin_tenant_name,
     nova_admin_user              => $nova_admin_user,
     purge_nova_config            => false,
