@@ -52,7 +52,6 @@ node 'control' inherits default {
     # optional. Not sure what to do about this.
     neutron_user_password        => $neutron_user_password,
     neutron_db_password          => $neutron_db_password,
-    neutron_core_plugin          => 'ml2',
     cinder_user_password         => $cinder_user_password,
     cinder_db_password           => $cinder_db_password,
     swift_user_password          => false,
@@ -125,6 +124,8 @@ node 'control' inherits default {
     iscsi_ip_address             => $control_ip,
     # Neutron
     neutron                      => true,
+    neutron_core_plugin          => 'ml2',
+    neutron_service_plugins      => ['router'],
     physical_network             => 'default',
     tenant_network_type          => 'gre',
     ovs_enable_tunneling         => true,
@@ -144,6 +145,7 @@ node 'control' inherits default {
     firewall_driver              => 'neutron.agent.linux.iptables_firewall.OVSHybridIptablesFirewallDriver',
     neutron_db_user              => $neutron_db_user,
     neutron_db_name              => $neutron_db_name,
+    neutron_bind_address         => $control_ip,
     neutron_auth_url             => 'http://${mgmt_ip}:35357/v2.0',
     enable_neutron_server        => true,
     security_group_api           => 'neutron',
@@ -200,6 +202,8 @@ node /compute/ inherits default {
   class { 'openstack::compute':
     # Required Network
     internal_address             => $data_ip,
+    # Required Nova
+    nova_user_password           => $nova_user_password,
     # Required Rabbit
     rabbit_password              => $rabbit_password,
     # DB
@@ -313,6 +317,7 @@ node /neutron[1-2]/ inherits default {
     sql_idle_timeout             => '3600',
     # Plugin
     core_plugin                  => 'ml2',
+    service_plugins              => ['router'],
     # General
     bind_address                 => $control_ip,
     keystone_host                => $control_ip,
