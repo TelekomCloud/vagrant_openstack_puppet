@@ -52,6 +52,7 @@ node 'control' inherits default {
     neutron_user_password        => $neutron_user_password,
     neutron_db_password          => $neutron_db_password,
     neutron_core_plugin          => 'ml2',
+		service_plugins              =>	'neutron.services.l3_router.l3_router_plugin.L3RouterPlugin',
     cinder_user_password         => $cinder_user_password,
     cinder_db_password           => $cinder_db_password,
     swift_user_password          => false,
