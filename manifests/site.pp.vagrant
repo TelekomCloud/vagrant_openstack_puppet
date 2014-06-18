@@ -57,10 +57,10 @@ node 'control' inherits default {
     swift_user_password          => false,
     # Database
     db_host                      => $control_ip,
-    db_type                      => 'mysql',
+    db_type                      => $db_type,
     mysql_account_security       => true,
     mysql_bind_address           => $control_ip,
-    sql_idle_timeout             => undef,
+    sql_idle_timeout             => $sql_idle_timeout,
     allowed_hosts                => '%',
     mysql_ssl                    => false,
     mysql_ca                     => undef,
@@ -97,10 +97,10 @@ node 'control' inherits default {
     nova_bind_address            => $control_ip,
     # Rabbit
     rabbit_host                  => $control_ip,
-    rabbit_hosts                 => false,
+    rabbit_hosts                 => $rabbit_hosts,
     rabbit_cluster_nodes         => false,
     rabbit_user                  => $rabbit_user,
-    rabbit_virtual_host          => '/',
+    rabbit_virtual_host          => $rabbit_virtual_host,
     # Horizon
     horizon                      => true,
     cache_server_ip              => $control_ip,
@@ -110,8 +110,8 @@ node 'control' inherits default {
     vnc_enabled                  => false,
     vncproxy_host                => false,
     # General
-    debug                        => false,
-    verbose                      => true,
+    debug                        => $control_debug,
+    verbose                      => $control_verbose,
     # cinder
     # if the cinder management components should be installed
     cinder                       => true,
@@ -119,15 +119,15 @@ node 'control' inherits default {
     cinder_db_dbname             => $cinder_db_name,
     cinder_bind_address          => $control_ip,
     manage_volumes               => true,
-    volume_group                 => 'cinder-volumes',
+    volume_group                 => $cinder_volume_group,
     setup_test_volume            => false,
     iscsi_ip_address             => $control_ip,
     # Neutron
     neutron                      => true,
-    neutron_core_plugin          => 'ml2',
-    neutron_service_plugins      => ['router'],
+    neutron_core_plugin          => $neutron_core_plugin,
+    neutron_service_plugins      => $neutron_service_plugins,
     physical_network             => 'default',
-    tenant_network_type          => 'gre',
+    tenant_network_type          => $neutron_tenant_network_type,
     ovs_enable_tunneling         => true,
     allow_overlapping_ips        => true,
     ovs_local_ip                 => false,
@@ -142,21 +142,21 @@ node 'control' inherits default {
     enable_l3_agent              => false,
     enable_metadata_agent        => false,
     metadata_shared_secret       => $neutron_meta_secret,
-    firewall_driver              => 'neutron.agent.linux.iptables_firewall.OVSHybridIptablesFirewallDriver',
+    firewall_driver              => $neutron_firewall_driver,
     neutron_db_user              => $neutron_db_user,
     neutron_db_name              => $neutron_db_name,
     neutron_bind_address         => $control_ip,
     neutron_auth_url             => 'http://${mgmt_ip}:35357/v2.0',
     enable_neutron_server        => true,
-    security_group_api           => 'neutron',
+    security_group_api           => $neutron_security_group_api,
     # swift
     swift                        => false,
     swift_public_address         => false,
     swift_internal_address       => false,
     swift_admin_address          => false,
     # Syslog
-    use_syslog                   => true,
-    log_facility                 => 'LOG_USER',
+    use_syslog                   => $use_syslog,
+    log_facility                 => $log_facility,
     enabled                      => true,
   }
 
@@ -165,26 +165,20 @@ node 'control' inherits default {
   $local_image_exists = inline_template("<%= File.exists?('${local_image}') %>")
   notify { "local_image_exists ${local_image_exists}": }
   if $local_image_exists == 'true' {
-    glance_image { 'cloudimg':
-      ensure           => present,
-      name             => "cirros-0.3.2-x86_64-disk",
-      is_public        => "yes",
-      container_format => "ovf",
-      disk_format      => 'qcow2',
-      source           => $local_image,
-      require          => Class['glance::api'],
-    }
+    $image_source = $local_image
   }
   else {
-    glance_image { 'cloudimg':
-      ensure           => present,
-      name             => "cirros-0.3.2-x86_64-disk",
-      is_public        => "yes",
-      container_format => "ovf",
-      disk_format      => 'qcow2',
-      source           => 'http://download.cirros-cloud.net/0.3.2/cirros-0.3.2-x86_64-disk.img',
-      require          => Class['glance::api'],
-    }
+    $image_source = 'http://download.cirros-cloud.net/0.3.2/cirros-0.3.2-x86_64-disk.img'
+  }
+
+  glance_image { 'cloudimg':
+    ensure           => present,
+    name             => "cirros-0.3.2-x86_64-disk",
+    is_public        => "yes",
+    container_format => "bare",
+    disk_format      => 'qcow2',
+    source           => $image_source,
+    require          => Class['glance::api'],
   }
   
   class { 'openstack::auth_file':
@@ -226,10 +220,10 @@ node /compute/ inherits default {
     neutron_host                 => $control_ip,
     ovs_enable_tunneling         => true,
     ovs_local_ip                 => $data_ip,
-    neutron_firewall_driver      => 'neutron.agent.linux.iptables_firewall.OVSHybridIptablesFirewallDriver',
+    neutron_firewall_driver      => $neutron_firewall_driver,
     bridge_mappings              => undef,
     bridge_uplinks               => undef,
-    security_group_api           => 'neutron',
+    security_group_api           => $neutron_security_group_api,
     # Nova
     nova_admin_tenant_name       => $nova_admin_tenant_name,
     nova_admin_user              => $nova_admin_user,
@@ -237,9 +231,9 @@ node /compute/ inherits default {
     libvirt_vif_driver           => 'nova.virt.libvirt.vif.LibvirtGenericVIFDriver',
     # Rabbit
     rabbit_host                  => $control_ip,
-    rabbit_hosts                 => false,
+    rabbit_hosts                 => $rabbit_hosts,
     rabbit_user                  => $rabbit_user,
-    rabbit_virtual_host          => '/',
+    rabbit_virtual_host          => $rabbit_virtual_host,
     # Glance
     glance_api_servers           => "${control_ip}:9292",
     # Virtualization
@@ -254,7 +248,7 @@ node /compute/ inherits default {
     cinder_db_password           => $cinder_db_password,
     cinder_db_user               => $cinder_db_user,
     cinder_db_name               => $cinder_db_name,
-    volume_group                 => 'cinder-volumes',
+    volume_group                 => $cinder_volume_group,
     iscsi_ip_address             => $control_ip,
     setup_test_volume            => false,
     cinder_rbd_user              => 'volumes',
@@ -262,10 +256,10 @@ node /compute/ inherits default {
     cinder_rbd_secret_uuid       => false,
     # General
     migration_support            => true,
-    verbose                      => true,
+    verbose                      => $compute_verbose,
     force_config_drive           => false,
-    use_syslog                   => true,
-    log_facility                 => 'LOG_USER',
+    use_syslog                   => $use_syslog,
+    log_facility                 => $log_facility,
     enabled                      => true,
   }
 }
@@ -288,15 +282,15 @@ node /neutron[1-2]/ inherits default {
     enable_ovs_agent             => false,
     enable_ovsml2_agent          => true,
     # OVS settings
-    tenant_network_type          => 'gre',
+    tenant_network_type          => $neutron_tenant_network_type,
     network_vlan_ranges          => undef,
     ovs_local_ip                 => $data_ip,
     ovs_enable_tunneling         => true,
     allow_overlapping_ips        => true,
-    bridge_uplinks               => ['br-ex:eth3'],
-    bridge_mappings              => ['default:br-ex'],
+    bridge_uplinks               => $neutron_bridge_uplinks,
+    bridge_mappings              => $neutron_bridge_mappings,
     # rely on the default set in ovs
-    firewall_driver              => 'neutron.agent.linux.iptables_firewall.OVSHybridIptablesFirewallDriver',
+    firewall_driver              => $neutron_firewall_driver,
     # networking and Interface Information
     # Metadata configuration
     shared_secret                => $neutron_meta_secret,
@@ -306,25 +300,25 @@ node /neutron[1-2]/ inherits default {
     # Rabbit Information
     rabbit_user                  => $rabbit_user,
     rabbit_host                  => $control_ip,
-    rabbit_hosts                 => false,
-    rabbit_virtual_host          => '/',
+    rabbit_hosts                 => $rabbit_hosts,
+    rabbit_virtual_host          => $rabbit_virtual_host,
     # Database. Currently mysql is the only option.
-    db_type                      => 'mysql',
+    db_type                      => $db_type,
     db_password                  => $neutron_db_password,
     db_host                      => $control_ip,
     db_name                      => $neutron_db_name,
     db_user                      => $neutron_db_user,
-    sql_idle_timeout             => '3600',
+    sql_idle_timeout             => $sql_idle_timeout,
     # Plugin
-    core_plugin                  => 'ml2',
-    service_plugins              => ['router'],
+    core_plugin                  => $neutron_core_plugin,
+    service_plugins              => $neutron_service_plugins,
     # General
     bind_address                 => $control_ip,
     keystone_host                => $control_ip,
-    use_syslog                   => true,
-    log_facility                 => 'LOG_USER',
-    verbose                      => true,
-    debug                        => true,
+    use_syslog                   => $use_syslog,
+    log_facility                 => $log_facility,
+    verbose                      => $neutron_verbose,
+    debug                        => $neutron_debug,
   }
 
   sysctl::value { 'net.ipv4.ip_forward':
