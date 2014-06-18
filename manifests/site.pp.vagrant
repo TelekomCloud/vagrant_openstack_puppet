@@ -24,6 +24,7 @@
 #
 
 node default {
+  Exec { path => '/usr/bin:/usr/sbin:/bin:/sbin' }
   import 'params.pp'
   $control_ip = dnslookup("control.local")
   notify { "found control ip $control_ip": }
