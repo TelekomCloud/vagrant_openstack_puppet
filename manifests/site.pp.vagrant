@@ -325,4 +325,11 @@ node /neutron[1-2]/ inherits default {
     value => '1'
   }
 
+  # vagrant only
+  # remove ip from external physical interface & add to br-ex
+  exec { "set_ip_to_br_ex":
+    command   => "/etc/init.d/set_ip_to_br_ex.sh",
+    require   => Class['neutron::agents::ml2::ovs'],
+  }
+
 }
