@@ -312,7 +312,8 @@ node /neutron[1-2]/ inherits default {
     db_user                      => $neutron_db_user,
     sql_idle_timeout             => '3600',
     # Plugin
-    core_plugin                  => 'ml2',
+    core_plugin                  => 'neutron.plugins.ml2.plugin.Ml2Plugin',
+		service_plugins              =>	'neutron.services.l3_router.l3_router_plugin.L3RouterPlugin',
     # General
     bind_address                 => $control_ip,
     keystone_host                => $control_ip,
