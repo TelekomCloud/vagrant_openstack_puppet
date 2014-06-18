@@ -1,15 +1,24 @@
-mod 'openstack', :git => 'git://github.com/trihoangvo/puppet-openstack'
-mod 'nova', :git => 'git://github.com/stackforge/puppet-nova'
+mod 'openstack',
+  :git => 'git://github.com/trihoangvo/puppet-openstack',
+  :ref => 'stable/icehouse'
+mod 'nova',
+  :git => 'git://github.com/stackforge/puppet-nova',
+  :ref => 'stable/icehouse'
 mod 'glance',
-  :git => 'https://github.com/TelekomCloud/puppet-glance.git'
+  :git => 'git://github.com/stackforge/puppet-glance',
+  :ref => 'stable/icehouse'
 mod 'keystone',
-  :git => 'https://github.com/TelekomCloud/puppet-keystone.git',
-  :ref => 'jupiter-1'
+  :git => 'git://github.com/stackforge/puppet-keystone',
+  :ref => 'stable/icehouse'
+mod 'cinder',
+  :git => 'git://github.com/stackforge/puppet-cinder',
+  :ref => 'stable/icehouse'
+mod 'neutron',
+  :git => 'git://github.com/stackforge/puppet-neutron'
 mod 'horizon', :git => 'git://github.com/stackforge/puppet-horizon'
-mod 'swift', :git => 'git://github.com/stackforge/puppet-swift'
-mod 'cinder', :git => 'git://github.com/stackforge/puppet-cinder'
 mod 'tempest', :git => 'git://github.com/stackforge/puppet-tempest'
-mod 'neutron', :git => 'git://github.com/trihoangvo/puppet-neutron.git'
+#mod 'swift', :git => 'git://github.com/stackforge/puppet-swift'
+
 # openstack middleware
 mod 'vswitch', :git => 'git://github.com/stackforge/puppet-vswitch'
 mod 'rabbitmq',
