@@ -106,6 +106,7 @@ node 'control' inherits default {
     cache_server_ip              => $control_ip,
     cache_server_port            => '11211',
     horizon_app_links            => undef,
+    horizon_allow_hosts          => $control_ip,
     # VNC
     vnc_enabled                  => false,
     vncproxy_host                => false,
